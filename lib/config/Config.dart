@@ -9,4 +9,5 @@
 
 class Config {
   static String domain = 'http://jd.itying.com/';
+  static int pageSize = 20;
 }

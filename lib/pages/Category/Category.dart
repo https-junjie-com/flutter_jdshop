@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-10-09 11:43:01
- * @LastEditTime: 2020-10-10 17:26:52
+ * @LastEditTime: 2020-10-12 17:50:37
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /flutter_jdshop/lib/pages/Category.dart
@@ -124,7 +124,7 @@ class _CategoryPageState extends State<CategoryPage>
               return InkWell(
                 onTap: () {
                   Navigator.pushNamed(context, '/productList', arguments: {
-                    'sid': rightCategoryItemModel.sId,
+                    'cid': rightCategoryItemModel.sId,
                   });
                 },
                 child: Container(
