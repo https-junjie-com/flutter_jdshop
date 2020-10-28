@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-10-10 17:18:02
- * @LastEditTime: 2020-10-22 20:06:09
+ * @LastEditTime: 2020-10-28 10:19:34
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /flutter_jdshop/lib/pages/Category/ProductList.dart
@@ -18,7 +18,8 @@ import 'package:flutter_easyrefresh/easy_refresh.dart';
 class SortCondition {
   String name;
   bool isSelected;
-  SortCondition({this.name, this.isSelected});
+  int index;
+  SortCondition({this.name, this.isSelected, this.index});
 }
 
 // ignore: must_be_immutable
@@ -45,8 +46,8 @@ class _ProductListPageState extends State<ProductListPage> {
   GlobalKey _stackKey = GlobalKey();
 
   //!刷新
-  EasyRefreshController _controller;
-  ScrollController _scrollController;
+  var _controller = EasyRefreshController();
+  var _scrollController = ScrollController();
 
   //!请求数据
   int _page = 1;
@@ -54,22 +55,32 @@ class _ProductListPageState extends State<ProductListPage> {
   List _productDataList = [];
   bool _isMoreData = false;
 
+  //!搜索数据
+  var _keywords;
+  var _cid;
+
+  //! 上一页面搜索内容
+  var _initKeyworldsController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
+
+    this._cid = widget.arguments['cid'];
+    this._keywords = widget.arguments['keywords'];
+    //给文本框赋值
+    this._initKeyworldsController.text = this._keywords;
+
     //!综合
     this
         ._comprehensiveSortConditions
-        .add(SortCondition(name: '综合排序', isSelected: true));
-    this
-        ._comprehensiveSortConditions
-        .add(SortCondition(name: '评分排序', isSelected: false));
+        .add(SortCondition(name: '综合排序', isSelected: false));
     this._selectComprehensiveSortCondition =
         this._comprehensiveSortConditions[0];
     //!销量
     this
         ._salesSortConditions
-        .add(SortCondition(name: '销量由高到低', isSelected: true));
+        .add(SortCondition(name: '销量由高到低', isSelected: false));
     this
         ._salesSortConditions
         .add(SortCondition(name: '销量由低到高', isSelected: false));
@@ -77,7 +88,7 @@ class _ProductListPageState extends State<ProductListPage> {
     //!价格
     this
         ._priceSortConditions
-        .add(SortCondition(name: '价格由高到低', isSelected: true));
+        .add(SortCondition(name: '价格由高到低', isSelected: false));
     this
         ._priceSortConditions
         .add(SortCondition(name: '价格由低到高', isSelected: false));
@@ -93,15 +104,32 @@ class _ProductListPageState extends State<ProductListPage> {
 
   //! 获取商品列表
   Future _getProductDataList() async {
-    String api =
-        '${Config.domain}api/plist?cid=${widget.arguments['cid']}&sort=${this._sort}&page=${this._page}&pageSize=${Config.pageSize}';
+    SVProgressHUD.show(' 加载中... ');
+    SVProgressHUD.dismissWithDelay(10000);
+    String api;
+
+    if (this._keywords == null) {
+      api =
+          '${Config.domain}api/plist?cid=${this._cid}&sort=${this._sort}&page=${this._page}&pageSize=${Config.pageSize}';
+    } else {
+      api =
+          '${Config.domain}api/plist?search=${this._keywords}&sort=${this._sort}&page=${this._page}&pageSize=${Config.pageSize}';
+    }
     var response = await Dio().get(api);
     var productDataList = ProductModel.fromJson(response.data);
-    setState(() {
-      this._isMoreData =
-          productDataList.result.length < Config.pageSize ? false : true;
-      this._productDataList.addAll(productDataList.result);
-    });
+    setState(
+      () {
+        if (productDataList.result.length == 0 && this._page == 1) {
+          SVProgressHUD.showError('未找到相关数据');
+        } else {
+          SVProgressHUD.dismiss();
+        }
+        this._isMoreData =
+            productDataList.result.length < Config.pageSize ? false : true;
+        this._controller.finishLoad(noMore: !this._isMoreData);
+        this._productDataList.addAll(productDataList.result);
+      },
+    );
   }
 
   //!选择框配置
@@ -122,16 +150,31 @@ class _ProductListPageState extends State<ProductListPage> {
           this._scaffoldKey.currentState.openEndDrawer();
         }
       },
+      // 头部的高度
       height: 44,
+      // 头部背景颜色
+      color: Colors.white,
+      // 头部边框宽度
       borderWidth: 1,
+      // 头部边框颜色
+      borderColor: Colors.transparent,
+      // 分割线高度
       dividerHeight: 20,
-      dividerColor: Colors.black12,
-      style: TextStyle(color: Color(0xFF666666), fontSize: 14),
+      // 分割线颜色
+      dividerColor: Colors.transparent,
+      // 文字样式
+      style: TextStyle(color: Colors.black87, fontSize: 13),
+      // 下拉时文字样式
       dropDownStyle: TextStyle(
-        fontSize: 14,
-        color: Theme.of(context).primaryColor,
+        fontSize: 13,
+        color: Colors.black87,
       ),
+      // 图标大小
       iconSize: 20,
+      // 图标颜色
+      iconColor: Colors.black87,
+      // 下拉时图标颜色
+      iconDropDownColor: Colors.black87,
     );
   }
 
@@ -149,8 +192,12 @@ class _ProductListPageState extends State<ProductListPage> {
               this._selectComprehensiveSortCondition = value;
               this._dropDownHeaderItemString[0] =
                   this._selectComprehensiveSortCondition.name;
+              this._dropDownHeaderItemString[1] = '销量';
+              this._dropDownHeaderItemString[2] = '价格';
               this._dropdownMenuController.hide();
-              setState(() {});
+              setState(() {
+                this._dropDownActionRequest(0, value.index);
+              });
             },
           ),
         ),
@@ -160,10 +207,14 @@ class _ProductListPageState extends State<ProductListPage> {
             this._salesSortConditions,
             (value) {
               this._selectSalesSortCondition = value;
+              this._dropDownHeaderItemString[0] = '综合';
               this._dropDownHeaderItemString[1] =
                   this._selectSalesSortCondition.name;
+              this._dropDownHeaderItemString[2] = '价格';
               this._dropdownMenuController.hide();
-              setState(() {});
+              setState(() {
+                this._dropDownActionRequest(1, value.index);
+              });
             },
           ),
         ),
@@ -173,10 +224,14 @@ class _ProductListPageState extends State<ProductListPage> {
             this._priceSortConditions,
             (value) {
               this._selectpriceSortCondition = value;
+              this._dropDownHeaderItemString[0] = '综合';
+              this._dropDownHeaderItemString[1] = '销量';
               this._dropDownHeaderItemString[2] =
                   this._selectpriceSortCondition.name;
               this._dropdownMenuController.hide();
-              setState(() {});
+              setState(() {
+                this._dropDownActionRequest(2, value.index);
+              });
             },
           ),
         ),
@@ -184,15 +239,99 @@ class _ProductListPageState extends State<ProductListPage> {
     );
   }
 
+  //!下拉菜单点击后,重新请求数据
+  _dropDownActionRequest(int dropDownId, int dropDownSelect) {
+    this._page = 1;
+    this._productDataList.clear();
+    if (dropDownId == 0) {
+      //综合排序
+      this._sort = '';
+    }
+    if (dropDownId == 1) {
+      if (dropDownSelect == 0) {
+        //销量由高到低
+        this._sort = 'salecount_1';
+      } else {
+        //销量由低到高
+        this._sort = 'salecount_1';
+      }
+    }
+    if (dropDownId == 2) {
+      if (dropDownSelect == 0) {
+        //价格由高到低
+        this._sort = 'price_-1';
+      } else {
+        //价格由低到高
+        this._sort = 'price_1';
+      }
+    }
+    this._getProductDataList();
+  }
+
+  //! 下拉菜单点击方法
+  Widget _buildSortConditionListWidget(
+      List<SortCondition> items, void itemOnTap(SortCondition sortCondition)) {
+    return ListView.separated(
+      controller: this._scrollController,
+      shrinkWrap: true,
+      scrollDirection: Axis.vertical,
+      itemCount: items.length,
+      separatorBuilder: (BuildContext context, int index) => Divider(height: 1),
+      itemBuilder: (BuildContext context, int index) {
+        SortCondition sortCondition = items[index];
+        return GestureDetector(
+          onTap: () {
+            for (var value in items) {
+              value.isSelected = false;
+            }
+            sortCondition.isSelected = true;
+            sortCondition.index = index;
+            //!一定要把点击的sortCondition返回回去
+            itemOnTap(sortCondition);
+            //!点击筛选按钮,列表返回顶部
+            this._scrollController.animateTo(0,
+                duration: Duration(microseconds: 500),
+                curve: Curves.decelerate);
+          },
+          child: Container(
+            height: 40,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  child: Text(
+                    sortCondition.name,
+                    style: TextStyle(
+                      color: sortCondition.isSelected
+                          ? Colors.blueAccent
+                          : Colors.black,
+                    ),
+                  ),
+                ),
+                sortCondition.isSelected
+                    ? Container(
+                        padding: EdgeInsets.only(right: 10),
+                        child: Icon(
+                          Icons.check,
+                          color: Colors.blueAccent,
+                          size: 16,
+                        ),
+                      )
+                    : SizedBox(
+                        width: 10,
+                      ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   //! 商品列表
   Widget _prductListWidget() {
-    if (this._productDataList.length > 0) {
-      SVProgressHUD.dismiss();
-    } else {
-      SVProgressHUD.show(' 加载中... ');
-      SVProgressHUD.dismissWithDelay(10000);
-    }
-    this._controller.finishRefresh(noMore: !this._isMoreData);
     return Expanded(
       flex: 1,
       child: Container(
@@ -207,10 +346,10 @@ class _ProductListPageState extends State<ProductListPage> {
           bottomBouncing: true,
           header: ClassicalHeader(
             enableInfiniteRefresh: false,
-            bgColor: null,
-            infoColor: Colors.teal,
-            float: false,
             enableHapticFeedback: true,
+            bgColor: null,
+            infoColor: Colors.black87,
+            float: false,
             refreshText: '下拉刷新',
             refreshReadyText: '释放刷新',
             refreshingText: '正在刷新',
@@ -222,6 +361,7 @@ class _ProductListPageState extends State<ProductListPage> {
           footer: ClassicalFooter(
             enableInfiniteLoad: false,
             enableHapticFeedback: true,
+            infoColor: Colors.black87,
             loadText: '上拉加载更多',
             loadReadyText: '释放加载',
             loadingText: '正在加载',
@@ -230,7 +370,34 @@ class _ProductListPageState extends State<ProductListPage> {
             noMoreText: '我是有底线的',
             infoText: '更新于 %T',
           ),
+          onRefresh: () async {
+            await Future.delayed(Duration(seconds: 1), () {
+              if (mounted) {
+                setState(() {
+                  this._page = 1;
+                  this._getProductDataList();
+                });
+              }
+              this._controller.resetLoadState();
+              this._controller.finishRefresh();
+            });
+          },
+          onLoad: () async {
+            await Future.delayed(Duration(seconds: 1), () {
+              if (mounted) {
+                setState(
+                  () {
+                    if (this._isMoreData) {
+                      this._page++;
+                      this._getProductDataList();
+                    }
+                  },
+                );
+              }
+            });
+          },
           child: ListView.builder(
+            controller: this._scrollController,
             itemCount: this._productDataList.length,
             itemBuilder: (BuildContext context, int index) {
               ProductItemModel productItemModel = this._productDataList[index];
@@ -309,36 +476,6 @@ class _ProductListPageState extends State<ProductListPage> {
               );
             },
           ),
-          onRefresh: () async {
-            await new Future.delayed(
-              const Duration(seconds: 1),
-              () {
-                if (mounted) {
-                  setState(
-                    () {
-                      this._page = 1;
-                      this._getProductDataList();
-                    },
-                  );
-                  this._controller.resetLoadState();
-                  this._controller.resetRefreshState();
-                }
-              },
-            );
-          },
-          onLoad: () async {
-            await Future.delayed(Duration(seconds: 1), () {
-              if (mounted) {
-                setState(
-                  () {
-                    this._page++;
-                    this._getProductDataList();
-                  },
-                );
-                this._controller.finishLoad(noMore: !this._isMoreData);
-              }
-            });
-          },
         ),
       ),
     );
@@ -349,7 +486,61 @@ class _ProductListPageState extends State<ProductListPage> {
     return Scaffold(
       key: this._scaffoldKey,
       appBar: AppBar(
-        title: Text('商品列表'),
+        title: Container(
+          child: TextField(
+            controller: this._initKeyworldsController,
+            autofocus: false,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.all(10.0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ScreenAdapter.height(30)),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (e) {
+              setState(() {
+                this._keywords = e;
+              });
+            },
+          ),
+          height: ScreenAdapter.height(60),
+          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+          decoration: BoxDecoration(
+            color: Color.fromRGBO(233, 233, 233, 0.8),
+            borderRadius: BorderRadius.circular(ScreenAdapter.height(30)),
+          ),
+        ),
+        actions: [
+          Container(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  child: InkWell(
+                    child: Container(
+                      padding: EdgeInsets.only(right: 15),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '搜索',
+                            style: TextStyle(
+                                fontSize: ScreenAdapter.size(28),
+                                color: Colors.black54),
+                          )
+                        ],
+                      ),
+                    ),
+                    onTap: () {
+                      this._dropDownActionRequest(0, 0);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+        elevation: 0,
       ),
       endDrawer: Container(
         height: ScreenAdapter.getScreenHeight(),
@@ -378,60 +569,4 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
     );
   }
-}
-
-Widget _buildSortConditionListWidget(
-    List<SortCondition> items, void itemOnTap(SortCondition sortCondition)) {
-  return ListView.separated(
-    shrinkWrap: true,
-    scrollDirection: Axis.vertical,
-    itemCount: items.length,
-    separatorBuilder: (BuildContext context, int index) => Divider(height: 1),
-    itemBuilder: (BuildContext context, int index) {
-      SortCondition sortCondition = items[index];
-      return GestureDetector(
-        onTap: () {
-          print('更新选择的数据');
-          for (var value in items) {
-            value.isSelected = false;
-          }
-          sortCondition.isSelected = true;
-          //!一定要把点击的sortCondition返回回去
-          itemOnTap(sortCondition);
-        },
-        child: Container(
-          height: 40,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 10,
-              ),
-              Expanded(
-                child: Text(
-                  sortCondition.name,
-                  style: TextStyle(
-                    color: sortCondition.isSelected
-                        ? Theme.of(context).primaryColor
-                        : Colors.black,
-                  ),
-                ),
-              ),
-              sortCondition.isSelected
-                  ? Container(
-                      padding: EdgeInsets.only(right: 10),
-                      child: Icon(
-                        Icons.check,
-                        color: Theme.of(context).primaryColor,
-                        size: 16,
-                      ),
-                    )
-                  : SizedBox(
-                      width: 10,
-                    ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
 }

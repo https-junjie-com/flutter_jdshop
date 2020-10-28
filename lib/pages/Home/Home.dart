@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-10-09 11:41:51
- * @LastEditTime: 2020-10-10 16:46:33
+ * @LastEditTime: 2020-10-26 11:37:17
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /flutter_jdshop/lib/pages/Home/Home.dart
@@ -140,7 +140,7 @@ class _HomePageState extends State<HomePage>
   Widget _hotProductListWidget() {
     if (this._hotProductDataList.length > 0) {
       var itemWidth =
-          (ScreenAdapter.getScreenWidth() - ScreenAdapter.width(50)) / 2.0;
+          (ScreenAdapter.getScreenWidth() - ScreenAdapter.width(60)) / 2.0;
       return Container(
         width: ScreenAdapter.getScreenWidth(),
         padding: EdgeInsets.all(ScreenAdapter.width(20)),

@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-10-09 11:31:13
- * @LastEditTime: 2020-10-10 17:02:28
+ * @LastEditTime: 2020-10-27 16:17:47
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /flutter_jdshop/lib/pages/tabs/Tab.dart
@@ -38,13 +38,69 @@ class _TabsState extends State<Tabs> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('京东'),
-      ),
+      appBar: this._currentIndex != 3
+          ? AppBar(
+              title: InkWell(
+                child: Container(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search,
+                        size: 15,
+                        color: Colors.black54,
+                      ),
+                      Text(
+                        '笔记本',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                  height: 44,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    color: Color.fromRGBO(233, 233, 233, 0.8),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    vertical: 8.0,
+                    horizontal: 8.0,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pushNamed(context, '/search');
+                },
+              ),
+              elevation: 0,
+              leading: IconButton(
+                  icon: Icon(
+                    Icons.center_focus_weak,
+                    size: 30,
+                    color: Colors.black54,
+                  ),
+                  onPressed: () {}),
+              actions: [
+                Container(
+                  child: IconButton(
+                      icon: Icon(
+                        Icons.message,
+                        size: 30,
+                        color: Colors.black54,
+                      ),
+                      onPressed: () {}),
+                )
+              ],
+            )
+          : AppBar(
+              title: Text('用户中心'),
+              elevation: 0,
+            ),
       body: PageView(
         controller: this._pageController,
         children: this._pageList,
         onPageChanged: (e) {},
+        physics: NeverScrollableScrollPhysics(),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: this._currentIndex,

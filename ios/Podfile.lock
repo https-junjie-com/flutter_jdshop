@@ -3,11 +3,14 @@ PODS:
   - flutter_svprogresshud (0.0.1):
     - Flutter
     - SVProgressHUD
+  - shared_preferences (0.0.1):
+    - Flutter
   - SVProgressHUD (2.2.5)
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_svprogresshud (from `.symlinks/plugins/flutter_svprogresshud/ios`)
+  - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
 
 SPEC REPOS:
   trunk:
@@ -18,10 +21,13 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_svprogresshud:
     :path: ".symlinks/plugins/flutter_svprogresshud/ios"
+  shared_preferences:
+    :path: ".symlinks/plugins/shared_preferences/ios"
 
 SPEC CHECKSUMS:
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
   flutter_svprogresshud: b2059bda0f7edd03cf992bc98362faa7e47c431c
+  shared_preferences: af6bfa751691cdc24be3045c43ec037377ada40d
   SVProgressHUD: 1428aafac632c1f86f62aa4243ec12008d7a51d6
 
 PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c

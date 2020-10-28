@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2020-10-09 15:20:57
- * @LastEditTime: 2020-10-10 15:20:03
+ * @LastEditTime: 2020-10-27 10:15:54
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: /flutter_jdshop/lib/setvices/ScreenAdapter.dart
@@ -29,5 +29,17 @@ class ScreenAdapter {
 
   static getScreenWidth() {
     return 1.wp;
+  }
+
+  static size(double size) {
+    return ScreenUtil().setSp(size, allowFontScalingSelf: true);
+  }
+
+  static getBarHeight() {
+    return ScreenUtil().statusBarHeight;
+  }
+
+  static getBottomHeight() {
+    return ScreenUtil().bottomBarHeight;
   }
 }
